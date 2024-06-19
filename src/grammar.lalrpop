@@ -1,0 +1,17 @@
+use std::str::FromStr;
+use crate::ast;
+use crate::ast::Expr;
+
+
+grammar;
+
+pub Term: String = {
+    r"[x-z]" => String::from_str(<>).unwrap(),
+    "(" <t:Term> ")" => t,
+};
+pub Expr: Expr = {Abs , App , Var};
+
+
+pub Var: Expr = <var:Term> => ast::Expr::Var(var.to_string());  
+pub Abs: Expr = "\\" <var:Term> "." <expr:Expr> => ast::Expr::Abs(var.to_string(), Box::new(expr));  
+pub App: Expr =  "(" <f:Expr> " " <s:Expr> ")"  => ast::Expr::App(Box::new(f), Box::new(s));
