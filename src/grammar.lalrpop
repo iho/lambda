@@ -8,10 +8,10 @@ grammar;
 pub Term: String = {
     r"[a-z]+" => String::from_str(<>).unwrap(),
 };
-pub Expr: Expr = {Abs , App , Alias, Var};
+pub Expr: Expr = {Lam , App , Alias, Var};
 
 
 pub Var: Expr = <var:Term> => ast::Expr::Var(var.to_string());  
-pub Abs: Expr = "\\" <var:Term> "." <expr:Expr> => ast::Expr::Abs(var.to_string(), Box::new(expr));  
+pub Lam: Expr = "\\" <var:Term> "." <expr:Expr> => ast::Expr::Lam(var.to_string(), Box::new(expr));  
 pub App: Expr =  "(" <f:Expr> "_" <s:Expr> ")"  => ast::Expr::App(Box::new(f), Box::new(s));
 pub Alias: Expr ="let " <name:Term>  " = " <e:Expr> => ast::Expr::Alias(name.to_string(), Box::new(e)); 
