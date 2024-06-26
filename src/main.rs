@@ -18,13 +18,35 @@ fn main() {
         .parse("let s = \\x. \\y. \\z. ((x_z)_(y_z))")
         .unwrap();
     let skk = grammar::ExprParser::new().parse("((s_k)_k)").unwrap();
-
+    // let foo = grammar::ExprParser::new().parse("\\x.x").unwrap();
+    let two = grammar::ExprParser::new()
+        .parse("let two = \\f. \\x. (f_(f_x))")
+        .unwrap();
+    let three = grammar::ExprParser::new()
+        .parse("let three = \\f. \\x. (f_(f_(f_x)))")
+        .unwrap();
+    let add = grammar::ExprParser::new()
+        .parse("let add = \\m.\\n.\\f.\\x. ((m_f)_(n_f))")
+        .unwrap();
+    let mul = grammar::ExprParser::new()
+        .parse("let mul = \\m. \\n. \\f. (m_(n_f))")
+        .unwrap();
+    let action = grammar::ExprParser::new()
+        .parse("((add_two)_three)").unwrap();
+    let res = eval(two, &mut env, &mut context, &mut variable_counter);
+    let res = eval(three, &mut env, &mut context, &mut variable_counter);
+    let res = eval(add, &mut env, &mut context, &mut variable_counter);
+    let res = eval(mul, &mut env, &mut context, &mut variable_counter);
+    let res = eval(action, &mut env, &mut context, &mut variable_counter);
     eval(k, &mut env, &mut context, &mut variable_counter);
     eval(s, &mut env, &mut context, &mut variable_counter);
-    let res = eval(skk.clone(), &mut env, &mut context, &mut variable_counter);
+    // let res = eval(skk.clone(), &mut env, &mut context, &mut variable_counter);
+    // println!("skk {:?}", res);
+    // let res = normalize(res.clone(), &mut env, &mut context, &mut variable_counter);
     println!("{:?}", res);
+    println!("{:?}", context);
     let res = normalize(res.clone(), &mut env, &mut context, &mut variable_counter);
-    println!("{:?}", res);
+    println!("add {:?}", res);
 }
 
 fn eval(
@@ -57,6 +79,7 @@ fn eval(
     }
 }
 
+
 fn substitute(
     expr: Expr,
     var: String,
@@ -75,7 +98,6 @@ fn substitute(
         }
         Expr::Lam(e1, e2) => {
             if e1 == var {
-                // Variable is bound, do not substitute
                 Expr::Lam(e1, e2)
             } else {
                 let new_var = format!("var_{}", variable_counter);
@@ -126,17 +148,13 @@ fn beta_reduction(
     variable_counter: &mut i32,
 ) -> Expr {
     match expr {
-        Expr::App(e1, e2) => {
-            match *e1.clone() {
-                Expr::Lam(d1, d2) => {
-                    return substitute(*d2, d1, *e2, env, context, variable_counter);
-                }
-                _ => {}
-            }
-            let res1 = beta_reduction(*e1, env, context, variable_counter);
-            let res2 = beta_reduction(*e2, env, context, variable_counter);
-            Expr::App(Box::new(res1), Box::new(res2))
-        }
+        Expr::App(e1, e2) => match *e1 {
+            Expr::Lam(d1, d2) => substitute(*d2, d1, *e2, env, context, variable_counter),
+            _ => Expr::App(
+                Box::new(beta_reduction(*e1, env, context, variable_counter)),
+                Box::new(beta_reduction(*e2, env, context, variable_counter)),
+            ),
+        },
         Expr::Lam(var, body) => Expr::Lam(
             var,
             Box::new(beta_reduction(*body, env, context, variable_counter)),
@@ -148,6 +166,7 @@ fn beta_reduction(
         ),
     }
 }
+
 
 fn normalize(
     expr: Expr,
